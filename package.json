@@ -1,0 +1,31 @@
+{
+  "name": "openclaw-investigations",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Distributed AI agent system to analyze the DOJ Epstein Library",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @openclaw/db generate",
+    "db:migrate": "pnpm --filter @openclaw/db migrate",
+    "db:push": "pnpm --filter @openclaw/db push",
+    "api:dev": "pnpm --filter @openclaw/api dev",
+    "api:deploy": "pnpm --filter @openclaw/api run cf:deploy",
+    "web:dev": "pnpm --filter @openclaw/web dev",
+    "web:build": "pnpm --filter @openclaw/web build",
+    "scraper:start": "pnpm --filter @openclaw/scraper start"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

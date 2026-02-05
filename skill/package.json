@@ -1,0 +1,36 @@
+{
+  "name": "@openclaw/epstein-investigator-skill",
+  "version": "0.1.0",
+  "description": "OpenClaw AgentSkill for analyzing DOJ Epstein Library documents",
+  "keywords": [
+    "openclaw",
+    "agent-skill",
+    "document-analysis",
+    "entity-extraction",
+    "investigation"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "openclaw": {
+    "skill": {
+      "name": "epstein-investigator",
+      "description": "Analyze documents from the DOJ Epstein Library, extract entities, relationships, and generate summaries",
+      "version": "0.1.0",
+      "entrypoint": "SKILL.md",
+      "heartbeat": "HEARTBEAT.md",
+      "capabilities": [
+        "document-ocr",
+        "entity-extraction",
+        "relationship-extraction",
+        "summarization",
+        "credibility-scoring"
+      ],
+      "requiredTools": [
+        "http",
+        "file-read",
+        "vision"
+      ],
+      "apiEndpoint": "https://api.openclaw.dev"
+    }
+  }
+}
