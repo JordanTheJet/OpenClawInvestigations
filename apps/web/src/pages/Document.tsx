@@ -60,7 +60,7 @@ export default function DocumentPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                {doc.fileName || `Document ${doc.id.slice(0, 8)}`}
+                {summary?.extractedTitle || doc.fileName || `Document ${doc.id.slice(0, 8)}`}
               </h1>
               <p className="text-gray-500 capitalize">
                 {doc.source} · {doc.fileType}

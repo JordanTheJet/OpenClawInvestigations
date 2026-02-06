@@ -53,6 +53,7 @@ app.get('/:id', async (c) => {
     },
     summary: summary
       ? {
+          extractedTitle: summary.extractedTitle,
           tldr: summary.tldr,
           detailedSummary: summary.detailedSummary,
           keyTopics: summary.keyTopics,

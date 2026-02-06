@@ -120,6 +120,7 @@ export interface DocumentDetail {
     updatedAt: string;
   };
   summary: {
+    extractedTitle: string | null;
     tldr: string | null;
     detailedSummary: string | null;
     keyTopics: string[];
