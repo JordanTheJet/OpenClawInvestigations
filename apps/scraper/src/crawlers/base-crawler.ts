@@ -1,162 +1,156 @@
-import { S3Client } from '@aws-sdk/client-s3';
-import { eq } from 'drizzle-orm';
-import { documents, tasks } from '@openclaw/db';
-import type { Database } from '@openclaw/db';
 import type { DocumentSource } from '@openclaw/shared';
-import { uploadToR2, computeHash, generateR2Key } from '../lib/r2-client.js';
-import { extractPDFMetadata, getFileType, getMimeType } from '../processors/pdf-splitter.js';
 
 export interface CrawlResult {
   url: string;
   fileName: string;
   success: boolean;
-  documentId?: string;
+  isNew?: boolean;
   error?: string;
 }
 
 export interface DocumentInfo {
   url: string;
   fileName: string;
+  fileType?: string;
 }
 
-export abstract class BaseCrawler {
-  protected db: Database;
-  protected r2: S3Client;
-  protected source: DocumentSource;
-  protected concurrency: number;
-  protected delayMs: number;
+export interface DiscoveryConfig {
+  apiUrl: string;
+  batchSize: number;
+  delayMs: number;
+}
 
-  constructor(
-    db: Database,
-    r2: S3Client,
-    source: DocumentSource,
-    options: { concurrency?: number; delayMs?: number } = {}
-  ) {
-    this.db = db;
-    this.r2 = r2;
+const DEFAULT_CONFIG: DiscoveryConfig = {
+  apiUrl: process.env.API_URL || 'https://openclaw-api.morepencils.workers.dev/api/v1',
+  batchSize: 50,
+  delayMs: 100,
+};
+
+/**
+ * Base crawler for discovering documents
+ * Now uses lazy discovery - just registers URLs, no downloads
+ */
+export abstract class BaseCrawler {
+  protected source: DocumentSource;
+  protected config: DiscoveryConfig;
+
+  constructor(source: DocumentSource, config: Partial<DiscoveryConfig> = {}) {
     this.source = source;
-    this.concurrency = options.concurrency || 5;
-    this.delayMs = options.delayMs || 1000;
+    this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
+  /**
+   * Discover document URLs from the source
+   * Implement in subclass
+   */
   abstract discoverDocuments(): Promise<DocumentInfo[]>;
 
-  async processDocument(info: DocumentInfo): Promise<CrawlResult> {
-    try {
-      console.log(`Downloading: ${info.url}`);
+  /**
+   * Submit discovered documents to the API
+   */
+  async submitDiscoveries(documents: DocumentInfo[]): Promise<CrawlResult[]> {
+    const results: CrawlResult[] = [];
 
-      // Download document
-      const response = await fetch(info.url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // Process in batches
+    for (let i = 0; i < documents.length; i += this.config.batchSize) {
+      const batch = documents.slice(i, i + this.config.batchSize);
+
+      try {
+        const response = await fetch(`${this.config.apiUrl}/discover`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documents: batch.map((doc) => ({
+              sourceUrl: doc.url,
+              fileName: doc.fileName,
+              source: this.source,
+              fileType: doc.fileType || this.getFileType(doc.fileName),
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          batch.forEach((doc) => {
+            results.push({
+              url: doc.url,
+              fileName: doc.fileName,
+              success: false,
+              error: `API error: ${response.status} - ${error}`,
+            });
+          });
+        } else {
+          const result = await response.json() as { new: number; existing: number };
+          batch.forEach((doc) => {
+            results.push({
+              url: doc.url,
+              fileName: doc.fileName,
+              success: true,
+              isNew: true, // We don't know per-doc, but batch succeeded
+            });
+          });
+          console.log(`Batch ${Math.floor(i / this.config.batchSize) + 1}: ${result.new} new, ${result.existing} existing`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        batch.forEach((doc) => {
+          results.push({
+            url: doc.url,
+            fileName: doc.fileName,
+            success: false,
+            error: message,
+          });
+        });
       }
 
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const hash = computeHash(buffer);
-
-      // Check for duplicate
-      const [existing] = await this.db
-        .select({ id: documents.id })
-        .from(documents)
-        .where(eq(documents.hash, hash));
-
-      if (existing) {
-        console.log(`Duplicate found: ${hash}`);
-        return {
-          url: info.url,
-          fileName: info.fileName,
-          success: true,
-          documentId: existing.id,
-        };
+      // Rate limiting
+      if (i + this.config.batchSize < documents.length) {
+        await this.delay(this.config.delayMs);
       }
-
-      // Get file metadata
-      const fileType = getFileType(info.fileName);
-      const mimeType = getMimeType(info.fileName);
-      let pageCount: number | null = null;
-
-      if (fileType === 'pdf') {
-        const metadata = await extractPDFMetadata(buffer);
-        pageCount = metadata.pageCount;
-      }
-
-      // Upload to R2
-      const r2Key = generateR2Key(this.source, hash, info.fileName);
-      await uploadToR2(this.r2, r2Key, buffer, mimeType);
-
-      // Insert document record
-      const [doc] = await this.db
-        .insert(documents)
-        .values({
-          hash,
-          source: this.source,
-          sourceUrl: info.url,
-          r2Key,
-          fileName: info.fileName,
-          fileType,
-          fileSizeBytes: buffer.length,
-          pageCount,
-          processingStatus: 'pending',
-        })
-        .returning();
-
-      // Create processing task
-      await this.db.insert(tasks).values({
-        documentId: doc!.id,
-        taskType: 'full_analysis',
-        status: 'AVAILABLE',
-        priority: 100,
-        requiredSubmissions: 2,
-      });
-
-      console.log(`Ingested: ${info.fileName} -> ${doc!.id}`);
-
-      return {
-        url: info.url,
-        fileName: info.fileName,
-        success: true,
-        documentId: doc!.id,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed: ${info.fileName} - ${message}`);
-      return {
-        url: info.url,
-        fileName: info.fileName,
-        success: false,
-        error: message,
-      };
     }
+
+    return results;
   }
 
+  /**
+   * Main crawl method - discover and submit
+   */
   async crawl(): Promise<CrawlResult[]> {
-    console.log(`Starting ${this.source} crawler...`);
+    console.log(`Starting ${this.source} discovery crawler...`);
 
-    const documentInfos = await this.discoverDocuments();
-    console.log(`Discovered ${documentInfos.length} documents`);
+    const documents = await this.discoverDocuments();
+    console.log(`Discovered ${documents.length} documents`);
 
-    const results: CrawlResult[] = [];
-    const pLimit = (await import('p-limit')).default;
-    const limit = pLimit(this.concurrency);
+    if (documents.length === 0) {
+      return [];
+    }
 
-    const tasks = documentInfos.map((info) =>
-      limit(async () => {
-        const result = await this.processDocument(info);
-        results.push(result);
-
-        // Delay between requests
-        await new Promise((resolve) => setTimeout(resolve, this.delayMs));
-        return result;
-      })
-    );
-
-    await Promise.all(tasks);
+    const results = await this.submitDiscoveries(documents);
 
     const successful = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
-    console.log(`Crawl complete: ${successful} successful, ${failed} failed`);
+    console.log(`Discovery complete: ${successful} submitted, ${failed} failed`);
 
     return results;
+  }
+
+  protected getFileType(fileName: string): string {
+    const ext = fileName.toLowerCase().split('.').pop();
+    switch (ext) {
+      case 'pdf':
+        return 'pdf';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'image';
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return 'video';
+      default:
+        return 'pdf';
+    }
   }
 
   protected async delay(ms: number): Promise<void> {

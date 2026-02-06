@@ -1,22 +1,18 @@
 import 'dotenv/config';
 import * as cheerio from 'cheerio';
 import { BaseCrawler, type DocumentInfo } from './base-crawler.js';
-import { getDb } from '../lib/db-client.js';
-import { createR2Client } from '../lib/r2-client.js';
 
 const DOJ_BASE_URL = 'https://www.justice.gov/usao-sdfl/us-v-ghislaine-maxwell-court-filings';
-const EPSTEIN_LIBRARY_URL = 'https://archive.org/details/epstein-documents';
+const EPSTEIN_ARCHIVE_URL = 'https://archive.org/details/epstein-documents';
 
-class DOJLibraryCrawler extends BaseCrawler {
+/**
+ * Crawler for DOJ Maxwell court filings
+ */
+export class DOJLibraryCrawler extends BaseCrawler {
   private baseUrl: string;
 
   constructor(baseUrl: string = DOJ_BASE_URL) {
-    const db = getDb();
-    const r2 = createR2Client();
-    super(db, r2, 'doj', {
-      concurrency: parseInt(process.env.CONCURRENCY || '5'),
-      delayMs: parseInt(process.env.DELAY_MS || '1000'),
-    });
+    super('doj');
     this.baseUrl = baseUrl;
   }
 
@@ -24,10 +20,10 @@ class DOJLibraryCrawler extends BaseCrawler {
     const documents: DocumentInfo[] = [];
 
     try {
-      // Fetch the main page
+      console.log(`Fetching DOJ page: ${this.baseUrl}`);
       const response = await fetch(this.baseUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch index: ${response.status}`);
+        throw new Error(`Failed to fetch: ${response.status}`);
       }
 
       const html = await response.text();
@@ -39,42 +35,27 @@ class DOJLibraryCrawler extends BaseCrawler {
         if (href) {
           const url = href.startsWith('http') ? href : new URL(href, this.baseUrl).toString();
           const fileName = decodeURIComponent(url.split('/').pop() || 'document.pdf');
-
-          documents.push({ url, fileName });
-        }
-      });
-
-      // Also look for links in common patterns
-      $('a').each((_, element) => {
-        const href = $(element).attr('href');
-        if (href && (href.includes('/files/') || href.includes('/docs/'))) {
-          const url = href.startsWith('http') ? href : new URL(href, this.baseUrl).toString();
-          if (url.endsWith('.pdf') || url.endsWith('.PDF')) {
-            const fileName = decodeURIComponent(url.split('/').pop() || 'document.pdf');
-            if (!documents.some((d) => d.url === url)) {
-              documents.push({ url, fileName });
-            }
+          if (!documents.some((d) => d.url === url)) {
+            documents.push({ url, fileName });
           }
         }
       });
     } catch (error) {
-      console.error('Error discovering documents:', error);
+      console.error('Error discovering DOJ documents:', error);
     }
 
     return documents;
   }
 }
 
-class ArchiveOrgCrawler extends BaseCrawler {
+/**
+ * Crawler for Archive.org Epstein documents collection
+ */
+export class ArchiveOrgCrawler extends BaseCrawler {
   private collectionId: string;
 
   constructor(collectionId: string = 'epstein-documents') {
-    const db = getDb();
-    const r2 = createR2Client();
-    super(db, r2, 'doj', {
-      concurrency: parseInt(process.env.CONCURRENCY || '3'),
-      delayMs: parseInt(process.env.DELAY_MS || '2000'),
-    });
+    super('archive');
     this.collectionId = collectionId;
   }
 
@@ -84,14 +65,15 @@ class ArchiveOrgCrawler extends BaseCrawler {
     try {
       // Use Internet Archive API to get collection metadata
       const metadataUrl = `https://archive.org/metadata/${this.collectionId}`;
-      const response = await fetch(metadataUrl);
+      console.log(`Fetching Archive.org metadata: ${metadataUrl}`);
 
+      const response = await fetch(metadataUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch metadata: ${response.status}`);
       }
 
       const metadata = (await response.json()) as {
-        files?: Array<{ name: string; format: string }>;
+        files?: Array<{ name: string; format?: string; size?: string }>;
       };
 
       // Filter for PDF files
@@ -105,12 +87,15 @@ class ArchiveOrgCrawler extends BaseCrawler {
             documents.push({
               url,
               fileName: file.name,
+              fileType: 'pdf',
             });
           }
         }
       }
+
+      console.log(`Found ${documents.length} PDFs in archive`);
     } catch (error) {
-      console.error('Error discovering documents from Archive.org:', error);
+      console.error('Error discovering Archive.org documents:', error);
     }
 
     return documents;
@@ -140,17 +125,6 @@ async function main() {
   console.log(`Total: ${results.length}`);
   console.log(`Success: ${results.filter((r) => r.success).length}`);
   console.log(`Failed: ${results.filter((r) => !r.success).length}`);
-
-  // Log failures
-  const failures = results.filter((r) => !r.success);
-  if (failures.length > 0) {
-    console.log('\nFailures:');
-    for (const f of failures) {
-      console.log(`  - ${f.fileName}: ${f.error}`);
-    }
-  }
 }
 
 main().catch(console.error);
-
-export { DOJLibraryCrawler, ArchiveOrgCrawler };

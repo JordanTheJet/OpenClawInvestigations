@@ -1,17 +1,37 @@
-import { eq, and, sql, lt, isNull, or, desc, asc } from 'drizzle-orm';
+import { eq, and, sql, lt, desc, asc } from 'drizzle-orm';
 import { tasks, documents, agents, taskSubmissions } from '@openclaw/db';
 import type { Database } from '@openclaw/db';
-import type { TaskWithDocument } from '@openclaw/shared';
+import { generateSliceTasks, fetchPageCount } from './document-queue.js';
 
 const CLAIM_TTL_MINUTES = 30;
 const HEARTBEAT_EXTENSION_MINUTES = 20;
+const DEFAULT_SLICE_SIZE = 25;
 
+export interface ClaimedTask {
+  id: string;
+  documentId: string;
+  taskType: string;
+  pageStart: number | null;
+  pageEnd: number | null;
+  document: {
+    id: string;
+    fileName: string | null;
+    fileType: string;
+    pageCount: number | null;
+    source: string;
+    sourceUrl: string;
+  };
+}
+
+/**
+ * Claim the next available task
+ * If claiming a document without slices, generates slices first
+ */
 export async function claimNextTask(
   db: Database,
   agentId: string,
-  bucket: R2Bucket
-): Promise<{ task: TaskWithDocument; claimExpiresAt: Date } | null> {
-  // Atomic claim using FOR UPDATE SKIP LOCKED
+  sliceSize: number = DEFAULT_SLICE_SIZE
+): Promise<{ task: ClaimedTask; claimExpiresAt: Date } | null> {
   // First, expire any stale claims
   await db
     .update(tasks)
@@ -23,21 +43,17 @@ export async function claimNextTask(
     })
     .where(and(eq(tasks.status, 'CLAIMED'), lt(tasks.claimExpiresAt, new Date())));
 
-  // Now claim the next available task
   const claimExpiresAt = new Date(Date.now() + CLAIM_TTL_MINUTES * 60 * 1000);
 
-  // Use a subquery approach for atomic claiming
+  // Try to claim an existing slice task first
   const availableTasks = await db
     .select({
       id: tasks.id,
       documentId: tasks.documentId,
       taskType: tasks.taskType,
-      status: tasks.status,
+      pageStart: tasks.pageStart,
+      pageEnd: tasks.pageEnd,
       priority: tasks.priority,
-      requiredSubmissions: tasks.requiredSubmissions,
-      submissionCount: tasks.submissionCount,
-      createdAt: tasks.createdAt,
-      updatedAt: tasks.updatedAt,
     })
     .from(tasks)
     .where(eq(tasks.status, 'AVAILABLE'))
@@ -45,12 +61,42 @@ export async function claimNextTask(
     .limit(1);
 
   if (availableTasks.length === 0) {
-    return null;
+    // No tasks available - check for documents needing slice generation
+    const unslicedDocs = await db
+      .select({ id: documents.id, sourceUrl: documents.sourceUrl })
+      .from(documents)
+      .where(and(
+        eq(documents.slicesGenerated, false),
+        eq(documents.processingStatus, 'discovered')
+      ))
+      .limit(1);
+
+    if (unslicedDocs.length === 0) {
+      return null; // Nothing to do
+    }
+
+    // Generate slices for this document
+    const doc = unslicedDocs[0]!;
+    try {
+      const pageCount = await fetchPageCount(doc.sourceUrl!);
+      await generateSliceTasks(db, doc.id, pageCount, sliceSize);
+
+      // Now try to claim again
+      return claimNextTask(db, agentId, sliceSize);
+    } catch (error) {
+      console.error(`Failed to generate slices for ${doc.id}:`, error);
+      // Mark document as failed
+      await db
+        .update(documents)
+        .set({ processingStatus: 'failed', updatedAt: new Date() })
+        .where(eq(documents.id, doc.id));
+      return null;
+    }
   }
 
   const taskToClaim = availableTasks[0]!;
 
-  // Attempt to claim it
+  // Attempt to claim it atomically
   const [claimedTask] = await db
     .update(tasks)
     .set({
@@ -63,8 +109,8 @@ export async function claimNextTask(
     .returning();
 
   if (!claimedTask) {
-    // Race condition - try again
-    return claimNextTask(db, agentId, bucket);
+    // Race condition - another worker claimed it, try again
+    return claimNextTask(db, agentId, sliceSize);
   }
 
   // Get document details
@@ -77,31 +123,21 @@ export async function claimNextTask(
     throw new Error('Document not found');
   }
 
-  // Generate R2 URL
-  const r2Url = `https://r2.openclaw.dev/${doc.r2Key}`;
-
   return {
     task: {
       id: claimedTask.id,
       documentId: claimedTask.documentId,
-      taskType: claimedTask.taskType as 'full_analysis',
-      status: claimedTask.status as 'CLAIMED',
-      priority: claimedTask.priority,
-      claimedBy: agentId,
-      claimExpiresAt,
-      requiredSubmissions: claimedTask.requiredSubmissions,
-      submissionCount: claimedTask.submissionCount,
-      createdAt: claimedTask.createdAt,
-      updatedAt: claimedTask.updatedAt,
+      taskType: claimedTask.taskType,
+      pageStart: claimedTask.pageStart,
+      pageEnd: claimedTask.pageEnd,
       document: {
         id: doc.id,
-        r2Key: doc.r2Key,
         fileName: doc.fileName,
         fileType: doc.fileType,
         pageCount: doc.pageCount,
         source: doc.source,
+        sourceUrl: doc.sourceUrl!,
       },
-      r2Url,
     },
     claimExpiresAt,
   };
@@ -190,7 +226,7 @@ export async function submitTask(
     })
     .where(eq(tasks.id, taskId));
 
-  // Award initial points (more on validation)
+  // Award initial points
   const initialPoints = 10;
   await db
     .update(agents)

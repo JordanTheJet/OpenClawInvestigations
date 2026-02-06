@@ -5,16 +5,18 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "development"
+SLICE_SIZE = "25" # Pages per slice
 
-# R2 bucket binding
+# R2 bucket binding (for optional caching)
 [[r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "openclaw-documents"
 
+# Note: Cloudflare Queue can be added later for batch processing
+# For now, use the direct /api/v1/discover endpoint
+
 # Secrets (set via wrangler secret put)
 # DATABASE_URL - Neon PostgreSQL connection string
-# R2_ACCESS_KEY_ID - R2 access key
-# R2_SECRET_ACCESS_KEY - R2 secret key
 
 [env.production]
-vars = { ENVIRONMENT = "production" }
+vars = { ENVIRONMENT = "production", SLICE_SIZE = "25" }

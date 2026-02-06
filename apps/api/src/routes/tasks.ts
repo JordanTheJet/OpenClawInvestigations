@@ -17,16 +17,26 @@ app.use('/*', authMiddleware);
 app.get('/next', async (c) => {
   const db = c.var.db;
   const agentId = c.var.agentId!;
-  const bucket = c.env.DOCUMENTS_BUCKET;
+  const sliceSize = parseInt(c.env.SLICE_SIZE || '25');
 
-  const result = await claimNextTask(db, agentId, bucket);
+  const result = await claimNextTask(db, agentId, sliceSize);
 
   if (!result) {
     return c.json({ error: 'No tasks available' }, 404);
   }
 
+  // Return task with source URL for on-demand fetching
   return c.json({
-    task: result.task,
+    task: {
+      id: result.task.id,
+      documentId: result.task.documentId,
+      taskType: result.task.taskType,
+      pageStart: result.task.pageStart,
+      pageEnd: result.task.pageEnd,
+      document: result.task.document,
+      // Source URL for direct fetching (no R2 storage)
+      sourceUrl: result.task.document.sourceUrl,
+    },
     claimExpiresAt: result.claimExpiresAt.toISOString(),
   });
 });

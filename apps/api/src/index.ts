@@ -10,6 +10,7 @@ import entityRoutes from './routes/entities.js';
 import documentRoutes from './routes/documents.js';
 import searchRoutes from './routes/search.js';
 import statsRoutes from './routes/stats.js';
+import discoverRoutes from './routes/discover.js';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -34,6 +35,7 @@ app.route('/api/v1/entities', entityRoutes);
 app.route('/api/v1/documents', documentRoutes);
 app.route('/api/v1/search', searchRoutes);
 app.route('/api/v1/stats', statsRoutes);
+app.route('/api/v1/discover', discoverRoutes);
 
 // 404 handler
 app.notFound((c) => {
