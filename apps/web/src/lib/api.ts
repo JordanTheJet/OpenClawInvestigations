@@ -50,6 +50,10 @@ export interface RecentSubmission {
   tldr: string | null;
   spiceRating: number | null;
   createdAt: string;
+  fileName: string;
+  pageStart: number | null;
+  pageEnd: number | null;
+  pageCount: number | null;
 }
 
 export interface SearchResult {

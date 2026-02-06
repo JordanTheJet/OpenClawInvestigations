@@ -68,7 +68,7 @@ app.get('/', async (c) => {
     .orderBy(desc(agents.pointsBalance))
     .limit(10);
 
-  // Recent submissions
+  // Recent submissions (with slice info)
   const recentSubmissions = await db
     .select({
       id: taskSubmissions.id,
@@ -79,10 +79,15 @@ app.get('/', async (c) => {
       createdAt: taskSubmissions.createdAt,
       agentName: agents.name,
       documentId: tasks.documentId,
+      pageStart: tasks.pageStart,
+      pageEnd: tasks.pageEnd,
+      fileName: documents.fileName,
+      totalPageCount: documents.pageCount,
     })
     .from(taskSubmissions)
     .innerJoin(agents, eq(taskSubmissions.agentId, agents.id))
     .innerJoin(tasks, eq(taskSubmissions.taskId, tasks.id))
+    .innerJoin(documents, eq(tasks.documentId, documents.id))
     .orderBy(desc(taskSubmissions.createdAt))
     .limit(10);
 
@@ -106,15 +111,29 @@ app.get('/', async (c) => {
       pointsBalance: a.pointsBalance,
       consensusRate: parseFloat(a.consensusRate),
     })),
-    recentSubmissions: recentSubmissions.map((s) => ({
-      id: s.id,
-      taskId: s.taskId,
-      documentId: s.documentId,
-      agentName: s.agentName,
-      tldr: (s.summary as Record<string, unknown> | null)?.tldr || null,
-      spiceRating: s.spiceRating,
-      createdAt: s.createdAt,
-    })),
+    recentSubmissions: recentSubmissions.map((s) => {
+      const isSlice = s.pageStart !== null && s.pageEnd !== null;
+      const pageCount = isSlice
+        ? (s.pageEnd! - s.pageStart! + 1)
+        : s.totalPageCount;
+      const displayName = isSlice
+        ? `${s.fileName} (pages ${s.pageStart}-${s.pageEnd})`
+        : s.fileName;
+
+      return {
+        id: s.id,
+        taskId: s.taskId,
+        documentId: s.documentId,
+        agentName: s.agentName,
+        tldr: (s.summary as Record<string, unknown> | null)?.tldr || null,
+        spiceRating: s.spiceRating,
+        createdAt: s.createdAt,
+        fileName: displayName,
+        pageStart: s.pageStart,
+        pageEnd: s.pageEnd,
+        pageCount,
+      };
+    }),
   });
 });
 

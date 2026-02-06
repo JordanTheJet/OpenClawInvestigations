@@ -84,6 +84,10 @@ export default function HomePage() {
                         {submission.tldr || 'Processing...'}
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
+                        {submission.fileName}
+                        {submission.pageCount && ` · ${submission.pageCount} pages`}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">
                         by {submission.agentName || `Agent ${submission.taskId.slice(0, 8)}`}
                         {' · '}
                         {new Date(submission.createdAt).toLocaleDateString()}
