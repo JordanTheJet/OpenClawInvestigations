@@ -34,7 +34,7 @@ importers:
         version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.30.0
-        version: 0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(react@18.3.1)
+        version: 0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(postgres@3.4.8)(react@18.3.1)
       hono:
         specifier: ^4.0.0
         version: 4.11.7
@@ -75,6 +75,9 @@ importers:
       pdf-parse:
         specifier: ^1.1.1
         version: 1.1.4
+      postgres:
+        specifier: ^3.4.8
+        version: 3.4.8
     devDependencies:
       '@types/node':
         specifier: ^20.11.0
@@ -145,7 +148,7 @@ importers:
         version: 0.9.5
       drizzle-orm:
         specifier: ^0.30.0
-        version: 0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(react@18.3.1)
+        version: 0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(postgres@3.4.8)(react@18.3.1)
     devDependencies:
       drizzle-kit:
         specifier: ^0.21.0
@@ -2740,6 +2743,10 @@ packages:
   postgres-range@1.1.4:
     resolution: {integrity: sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==}
 
+  postgres@3.4.8:
+    resolution: {integrity: sha512-d+JFcLM17njZaOLkv6SCev7uoLaBtfK86vMUXhW1Z4glPWh4jozno9APvW/XKFJ3CCxVoC7OL38BqRydtu5nGg==}
+    engines: {node: '>=12'}
+
   prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
@@ -5220,12 +5227,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(react@18.3.1):
+  drizzle-orm@0.30.10(@cloudflare/workers-types@4.20260205.0)(@neondatabase/serverless@0.9.5)(@types/pg@8.11.6)(@types/react@18.3.28)(postgres@3.4.8)(react@18.3.1):
     optionalDependencies:
       '@cloudflare/workers-types': 4.20260205.0
       '@neondatabase/serverless': 0.9.5
       '@types/pg': 8.11.6
       '@types/react': 18.3.28
+      postgres: 3.4.8
       react: 18.3.1
 
   electron-to-chromium@1.5.286: {}
@@ -5794,6 +5802,8 @@ snapshots:
   postgres-interval@3.0.0: {}
 
   postgres-range@1.1.4: {}
+
+  postgres@3.4.8: {}
 
   prettier@3.8.1: {}
 

@@ -11,13 +11,14 @@
     "crawl:fbi": "tsx src/crawlers/fbi-vault.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.500.0",
     "@openclaw/db": "workspace:*",
     "@openclaw/shared": "workspace:*",
-    "@aws-sdk/client-s3": "^3.500.0",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.0",
     "p-limit": "^5.0.0",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "postgres": "^3.4.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

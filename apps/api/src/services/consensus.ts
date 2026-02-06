@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { tasks, taskSubmissions, documentSummaries, agents } from '@openclaw/db';
+import { tasks, taskSubmissions, documentSummaries, agents, documents } from '@openclaw/db';
 import type { Database } from '@openclaw/db';
 
 interface EntityMention {
@@ -68,15 +68,19 @@ export async function validateAndMerge(db: Database, taskId: string): Promise<vo
     return;
   }
 
-  const { agreed, consensusScore } = await checkConsensus(db, taskId);
+  const submissions = await db
+    .select()
+    .from(taskSubmissions)
+    .where(eq(taskSubmissions.taskId, taskId));
+
+  // Auto-validate if only 1 submission required and we have it
+  const autoValidate = task.requiredSubmissions === 1 && submissions.length >= 1;
+
+  const { agreed, consensusScore } = autoValidate
+    ? { agreed: true, consensusScore: 1 }
+    : await checkConsensus(db, taskId);
 
   if (agreed) {
-    // Accept submissions and merge into document summary
-    const submissions = await db
-      .select()
-      .from(taskSubmissions)
-      .where(eq(taskSubmissions.taskId, taskId));
-
     // Use the submission with highest credibility score
     const bestSubmission = submissions.reduce((best, current) => {
       const bestScore = parseFloat(best.credibilityScore || '0');
@@ -141,6 +145,12 @@ export async function validateAndMerge(db: Database, taskId: string): Promise<vo
       .update(tasks)
       .set({ status: 'VALIDATED', updatedAt: new Date() })
       .where(eq(tasks.id, taskId));
+
+    // Mark document as completed
+    await db
+      .update(documents)
+      .set({ processingStatus: 'completed', updatedAt: new Date() })
+      .where(eq(documents.id, task.documentId));
   } else {
     // Mark as disputed for manual review
     await db
