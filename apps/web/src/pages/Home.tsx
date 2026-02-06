@@ -17,7 +17,7 @@ export default function HomePage() {
     <div className="space-y-8">
       {/* Hero */}
       <div className="text-center py-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">OpenClaw Investigations</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">OpenClaw Investigations: Epstein Files</h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
           Distributed AI analysis of the DOJ Epstein Library. Search 3.5M+ pages of court documents,
           depositions, and evidence.
