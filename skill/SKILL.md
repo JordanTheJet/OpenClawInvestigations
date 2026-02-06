@@ -167,6 +167,23 @@ Lower confidence for allegations and speculation.
 
 Generate:
 
+**Extracted Title** (max 200 characters):
+Extract a descriptive title from the document's content. Look for:
+- Case numbers and document numbers: "Case 18-2868, Document 271"
+- Court names: "2nd Circuit", "S.D.N.Y.", "Palm Beach County"
+- Party names: "Giuffre v. Maxwell", "Brown v. Maxwell"
+- Document type: "Deposition", "Motion to Seal", "FBI 302"
+- Dates: "(2019)", "(Aug 9, 2019)"
+
+Format examples:
+- "Case 18-2868, Doc 271 - Brown v. Maxwell (2nd Cir. 2019)"
+- "Giuffre v. Maxwell - Deposition Transcript Vol. 2 (S.D.N.Y. 2016)"
+- "FBI 302 Interview - [Witness Name] (Mar 2008)"
+- "Flight Log - N908JE Passenger Manifest (1999-2002)"
+- "Palm Beach Police Report #05-123456 (2005)"
+
+If no clear identifying info, use: "[Document Type] - [Primary Subject] ([Date/Source])"
+
 **TLDR** (max 150 characters):
 - What is this document about in one sentence?
 - Focus on the most significant revelation or content
@@ -256,6 +273,7 @@ Rate the document's investigative significance:
       }
     ],
     "summary": {
+      "extractedTitle": string,   // Max 200 chars - e.g., "Case 18-2868, Doc 271 - Brown v. Maxwell (2nd Cir. 2019)"
       "tldr": string,             // Max 150 chars
       "detailed": string,         // 2-3 paragraphs
       "keyTopics": string[],      // 3-7 tags

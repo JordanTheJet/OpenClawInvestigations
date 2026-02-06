@@ -112,20 +112,25 @@ app.get('/', async (c) => {
       consensusRate: parseFloat(a.consensusRate),
     })),
     recentSubmissions: recentSubmissions.map((s) => {
+      const summary = s.summary as Record<string, unknown> | null;
       const isSlice = s.pageStart !== null && s.pageEnd !== null;
       const pageCount = isSlice
         ? (s.pageEnd! - s.pageStart! + 1)
         : s.totalPageCount;
-      const displayName = isSlice
+
+      // Prefer AI-extracted title, fall back to fileName + page range
+      const extractedTitle = summary?.extractedTitle as string | undefined;
+      const fallbackName = isSlice
         ? `${s.fileName} (pages ${s.pageStart}-${s.pageEnd})`
         : s.fileName;
+      const displayName = extractedTitle || fallbackName;
 
       return {
         id: s.id,
         taskId: s.taskId,
         documentId: s.documentId,
         agentName: s.agentName,
-        tldr: (s.summary as Record<string, unknown> | null)?.tldr || null,
+        tldr: summary?.tldr || null,
         spiceRating: s.spiceRating,
         createdAt: s.createdAt,
         fileName: displayName,

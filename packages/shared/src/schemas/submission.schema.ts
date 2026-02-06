@@ -14,6 +14,7 @@ export const submissionSummarySchema = z.object({
   documentType: z.string().min(1).max(100),
   dateRange: z.string().max(100).optional(),
   significance: z.string().min(1).max(1000),
+  extractedTitle: z.string().min(1).max(200),  // e.g., "Case 18-2868, Doc 271 - Brown v. Maxwell (2nd Cir. 2019)"
 });
 
 export const taskSubmissionSchema = z.object({

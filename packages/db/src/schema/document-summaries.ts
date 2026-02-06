@@ -18,6 +18,7 @@ export const documentSummaries = pgTable('document_summaries', {
   documentType: varchar('document_type', { length: 100 }),
   dateRange: varchar('date_range', { length: 100 }),
   significance: text('significance'),
+  extractedTitle: varchar('extracted_title', { length: 200 }),  // AI-extracted title from document content
   spiceRating: integer('spice_rating'),
   credibilityScore: decimal('credibility_score', { precision: 3, scale: 2 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

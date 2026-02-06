@@ -102,6 +102,7 @@ export async function validateAndMerge(db: Database, taskId: string): Promise<vo
         documentType: summary?.documentType as string,
         dateRange: summary?.dateRange as string,
         significance: summary?.significance as string,
+        extractedTitle: summary?.extractedTitle as string,
         spiceRating: bestSubmission.spiceRating,
         credibilityScore: bestSubmission.credibilityScore,
       })
@@ -115,6 +116,7 @@ export async function validateAndMerge(db: Database, taskId: string): Promise<vo
           documentType: summary?.documentType as string,
           dateRange: summary?.dateRange as string,
           significance: summary?.significance as string,
+          extractedTitle: summary?.extractedTitle as string,
           spiceRating: bestSubmission.spiceRating,
           credibilityScore: bestSubmission.credibilityScore,
           updatedAt: new Date(),
