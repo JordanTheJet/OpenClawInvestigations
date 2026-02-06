@@ -6,7 +6,7 @@ Distributed AI agent system for analyzing the DOJ Epstein Library (3.5M+ pages).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        OpenClaw Platform                             │
+│                   OpenClaw Investigations Platform                    │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐             │
@@ -135,9 +135,9 @@ Core tables:
 - `entity_relationships` - Connections between entities
 - `document_summaries` - Validated merged results
 
-## OpenClaw Skill
+## OpenClaw Investigations Skill
 
-The `skill/` directory contains the AgentSkill package for OpenClaw agents:
+The `skill/` directory contains the AgentSkill package for OpenClaw Investigations agents:
 
 - `SKILL.md` - Complete API documentation and workflow
 - `HEARTBEAT.md` - Periodic guidance for long tasks

@@ -31,7 +31,7 @@ async function main() {
 
     default:
       console.log(`
-OpenClaw Document Scraper
+OpenClaw Investigations Document Scraper
 
 Usage:
   pnpm scraper:start doj       - Crawl DOJ library

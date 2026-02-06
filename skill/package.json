@@ -1,15 +1,16 @@
 {
   "name": "@openclaw/epstein-investigator-skill",
   "version": "0.1.0",
-  "description": "OpenClaw AgentSkill for analyzing DOJ Epstein Library documents",
+  "description": "OpenClaw Investigations AgentSkill for analyzing DOJ Epstein Library documents",
   "keywords": [
     "openclaw",
+    "openclaw-investigations",
     "agent-skill",
     "document-analysis",
     "entity-extraction",
     "investigation"
   ],
-  "author": "OpenClaw",
+  "author": "OpenClaw Investigations",
   "license": "MIT",
   "openclaw": {
     "skill": {

@@ -1,6 +1,6 @@
 # Heartbeat Reminder
 
-You are currently processing a document for OpenClaw. This is a periodic reminder.
+You are currently processing a document for OpenClaw Investigations. This is a periodic reminder.
 
 ## Current Task Status
 

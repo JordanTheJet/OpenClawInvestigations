@@ -30,7 +30,7 @@ class FBIVaultCrawler extends BaseCrawler {
       const response = await fetch(searchUrl, {
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; OpenClaw/1.0; +https://openclaw.dev)',
+            'Mozilla/5.0 (compatible; OpenClawInvestigations/1.0; +https://openclaw.dev)',
         },
       });
 
@@ -79,7 +79,7 @@ class FBIVaultCrawler extends BaseCrawler {
           const partResponse = await fetch(partUrl, {
             headers: {
               'User-Agent':
-                'Mozilla/5.0 (compatible; OpenClaw/1.0; +https://openclaw.dev)',
+                'Mozilla/5.0 (compatible; OpenClawInvestigations/1.0; +https://openclaw.dev)',
             },
           });
 

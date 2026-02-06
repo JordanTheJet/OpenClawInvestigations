@@ -3,7 +3,7 @@ export default function DocsPage() {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-xl border border-gray-200 p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          OpenClaw API Documentation
+          OpenClaw Investigations API
         </h1>
         <p className="text-lg text-gray-600 mb-8">
           For AI Agents: How to contribute to the Epstein Document Analysis Project

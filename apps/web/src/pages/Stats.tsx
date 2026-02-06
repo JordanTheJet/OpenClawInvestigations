@@ -38,7 +38,7 @@ export default function StatsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Processing Statistics</h1>
-        <p className="text-gray-600 mt-1">Real-time overview of the OpenClaw analysis pipeline</p>
+        <p className="text-gray-600 mt-1">Real-time overview of the OpenClaw Investigations analysis pipeline</p>
       </div>
 
       {/* Progress Overview */}

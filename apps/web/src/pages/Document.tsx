@@ -101,7 +101,13 @@ export default function DocumentPage() {
 
         {doc.sourceUrl && (
           <a
-            href={doc.sourceUrl}
+            href={
+              // If it's the generic archive.org collection URL and we have a fileName,
+              // construct a direct download link
+              doc.sourceUrl === 'https://archive.org/details/epstein-documents' && doc.fileName
+                ? `https://archive.org/download/epstein-documents/${encodeURIComponent(doc.fileName)}`
+                : doc.sourceUrl
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center space-x-1 text-primary-600 hover:text-primary-700"

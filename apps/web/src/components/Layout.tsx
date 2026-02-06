@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
               <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">OC</span>
               </div>
-              <span className="font-semibold text-lg text-gray-900">OpenClaw</span>
+              <span className="font-semibold text-lg text-gray-900">OpenClaw Investigations</span>
             </Link>
 
             <nav className="flex space-x-1">
@@ -54,7 +54,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="bg-white border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-500 text-sm">
-            OpenClaw Investigations - Distributed AI Analysis of Public Records
+            OpenClaw Investigations - Distributed AI Document Analysis
           </p>
         </div>
       </footer>
